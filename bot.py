@@ -1,21 +1,45 @@
+import os
+import random
+import asyncio
+from datetime import datetime
+import pytz
+import sys
+
+import discord
+from discord.ext import commands
+
+# ========= CONFIGURAÇÕES =========
+
+SALOMONISSE_ROLE_ID = 1453502439167623289
+QUARENTENA_ROLE_ID  = 1453505974282485956
+CRONICA_ROLE_ID     = 1453808748387766334
+
+QUARENTENA_CHANNEL_ID = 1453640324097376391
+
+TIMEZONE = pytz.timezone("America/Sao_Paulo")
+
+TOKEN = os.getenv("DISCORD_TOKEN")
+if not TOKEN:
+    raise RuntimeError("DISCORD_TOKEN não definido")
+
+# ========= INTENTS =========
+intents = discord.Intents.default()
+intents.members = True
+intents.guilds = True
+
+# 👉 BOT PRECISA SER CRIADO ANTES DOS DECORATORS
+bot = commands.Bot(command_prefix="!", intents=intents)
+
+# ========= EVENTOS =========
 @bot.event
 async def on_ready():
     print(f"Bot conectado como {bot.user}")
-    bot.loop.create_task(evento_diario())
+    await executar_evento()
+    await bot.close()
+    os._exit(0)
 
-
-async def evento_diario():
-    # ===== ESPERA ATÉ A MEIA-NOITE =====
-    while True:
-        agora = datetime.now(TIMEZONE)
-
-        if agora.hour == 0 and agora.minute == 0:
-            print("Meia-noite detectada. Executando evento diário.")
-            break
-
-        await asyncio.sleep(20)
-
-    # ===== EXECUÇÃO =====
+# ========= LÓGICA =========
+async def executar_evento():
     for guild in bot.guilds:
         salomonisse = guild.get_role(SALOMONISSE_ROLE_ID)
         quarentena  = guild.get_role(QUARENTENA_ROLE_ID)
@@ -36,8 +60,7 @@ async def evento_diario():
 
                 await canal_q.send(
                     f"☠️ **SALOMONISSE CRÔNICA**\n"
-                    f"{member.mention} entrou em estado crônico.\n"
-                    f"Acesso à quarentena revogado."
+                    f"{member.mention} entrou em estado crônico."
                 )
 
         # ===== INFECÇÃO =====
@@ -57,7 +80,7 @@ async def evento_diario():
                 f"{infectado.mention} foi contaminado pela **Salomonisse (SAV)**."
             )
 
-    print("Evento finalizado. Encerrando bot.")
+    print("Evento diário concluído.")
 
-    await bot.close()
-    os._exit(0)  # 🔥 encerra o processo de vez
+# ========= START =========
+bot.run(TOKEN)
