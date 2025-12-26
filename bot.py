@@ -33,14 +33,17 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 async def on_ready():
     print(f"Bot conectado como {bot.user}")
 
-    agora = datetime.now(TIMEZONE)
+    # ===== ESPERA ATÉ A MEIA-NOITE =====
+    while True:
+        agora = datetime.now(TIMEZONE)
 
-    # Executa somente à meia-noite
-    if agora.hour != 0:
-        print("Não é meia-noite. Encerrando.")
-        await bot.close()
-        return
+        if agora.hour == 0:
+            print("Meia-noite detectada. Executando evento diário.")
+            break
 
+        await asyncio.sleep(30)  # verifica a cada 30 segundos
+
+    # ===== EXECUÇÃO DIÁRIA =====
     for guild in bot.guilds:
         salomonisse = guild.get_role(SALOMONISSE_ROLE_ID)
         quarentena  = guild.get_role(QUARENTENA_ROLE_ID)
@@ -55,10 +58,16 @@ async def on_ready():
             if member.bot:
                 continue
 
-            # Se ainda tem Salomonisse e NÃO é crônico → vira crônico
             if salomonisse in member.roles and cronica not in member.roles:
-                await member.remove_roles(salomonisse, quarentena, reason="Salomonisse Crônica")
-                await member.add_roles(cronica, reason="Salomonisse Crônica")
+                await member.remove_roles(
+                    salomonisse,
+                    quarentena,
+                    reason="Salomonisse Crônica"
+                )
+                await member.add_roles(
+                    cronica,
+                    reason="Salomonisse Crônica"
+                )
 
                 await canal_q.send(
                     f"☠️ **SALOMONISSE CRÔNICA**\n"
@@ -79,7 +88,10 @@ async def on_ready():
             continue
 
         infectado = random.choice(candidatos)
-        await infectado.add_roles(salomonisse, reason="Infecção diária")
+        await infectado.add_roles(
+            salomonisse,
+            reason="Infecção diária"
+        )
 
         await canal_q.send(
             f"🦠 **INFECÇÃO CONFIRMADA**\n"
@@ -89,6 +101,7 @@ async def on_ready():
 
         print(f"{infectado} infectado em {guild.name}")
 
+    # ===== ENCERRA O BOT =====
     await bot.close()
 
 bot.run(TOKEN)
